@@ -1,0 +1,467 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Valentine scroll · moving No · WhatsApp Yes</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Roboto, system-ui, -apple-system, sans-serif;
+            background: linear-gradient(145deg, #fbc2c2 0%, #f8e1e7 80%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            overflow-y: auto;                 /* 🌟 scrollable overall */
+            padding: 2rem 1rem;
+            position: relative;
+        }
+
+        /* floating hearts background (scrolls with page) */
+        .hearts-bg {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .heart-float {
+            position: absolute;
+            font-size: 2rem;
+            opacity: 0.5;
+            color: #ff99aa;
+            animation: rise 12s linear infinite;
+            user-select: none;
+        }
+
+        @keyframes rise {
+            0% { transform: translateY(100vh) scale(0.6); opacity: 0.2; }
+            50% { opacity: 0.8; }
+            100% { transform: translateY(-20vh) scale(1.2); opacity: 0; }
+        }
+
+        /* main scrollable card */
+        .valentine-card {
+            max-width: 750px;
+            width: 100%;
+            background: rgba(255, 250, 245, 0.9);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border-radius: 48px 48px 32px 32px;
+            box-shadow: 0 25px 50px -8px rgba(230, 50, 80, 0.3),
+                        0 0 0 2px #ffe2e6 inset;
+            padding: 3rem 2rem 4rem;
+            text-align: center;
+            z-index: 10;
+            margin: 2rem auto;
+            transition: all 0.2s;
+            border: 1px solid rgba(255,255,240,0.7);
+        }
+
+        h1 {
+            font-size: clamp(2.8rem, 10vw, 4.2rem);
+            font-weight: 800;
+            background: linear-gradient(130deg, #d62828, #ff8c94);
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+            letter-spacing: -0.02em;
+            text-shadow: 0 4px 12px rgba(220, 38, 38, 0.2);
+            margin-bottom: 1.2rem;
+        }
+
+        .verse {
+            font-size: 1.5rem;
+            color: #5e4b56;
+            background: rgba(255, 215, 220, 0.5);
+            padding: 1.4rem 1.8rem;
+            border-radius: 60px 60px 30px 30px;
+            margin: 2rem 0 2.8rem 0;
+            line-height: 1.6;
+            border: 2px dashed #ffb3ba;
+            box-shadow: 0 4px 10px #ffd9df;
+        }
+
+        /* interactive area — relative container for moving no button */
+        .button-playground {
+            position: relative;
+            min-height: 140px;
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 2rem 0 3rem;
+            background: rgba(255, 228, 235, 0.3);
+            border-radius: 80px;
+            padding: 1.2rem;
+            transition: background 0.2s;
+        }
+
+        .btn {
+            border: none;
+            font-weight: 700;
+            font-size: 2rem;
+            padding: 1.2rem 2.8rem;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 10px 20px -7px rgba(0,0,0,0.2);
+            transition: transform 0.2s ease, box-shadow 0.2s, left 0.1s, top 0.1s;
+            letter-spacing: 2px;
+            will-change: transform, left, top;
+            border: 2px solid white;
+        }
+
+        .btn-yes {
+            background: linear-gradient(115deg, #dc2626, #ff4d6d);
+            color: white;
+            margin-right: 50px;         /* gives initial space */
+            z-index: 20;
+        }
+
+        .btn-yes:hover {
+            transform: scale(1.05) translateY(-4px);
+            box-shadow: 0 20px 25px -5px #dc2626;
+        }
+
+        .btn-no {
+            background: linear-gradient(115deg, #6b4e71, #334e68);
+            color: white;
+            position: absolute;
+            left: calc(50% + 20px);      /* sits right of center */
+            top: 50%;
+            transform: translateY(-50%);
+            transition: left 0.12s ease-out, top 0.12s ease-out, transform 0.2s;
+            z-index: 25;
+            min-width: 140px;
+        }
+
+        /* when hovered or clicked it moves — we also move via js on click */
+        .btn-no:active {
+            transition: left 0.08s, top 0.08s;
+        }
+
+        /* hidden success message */
+        .love-message {
+            background: #fef3c7;
+            border-radius: 60px 60px 30px 30px;
+            padding: 2.5rem 2rem;
+            border: 3px solid #ff9fae;
+            margin-top: 2.5rem;
+            animation: pop-in 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            box-shadow: 0 25px 35px -12px #f43f5e;
+        }
+
+        .love-message h2 {
+            font-size: 3rem;
+            color: #b3404a;
+            margin-bottom: 0.8rem;
+        }
+
+        .love-message p {
+            font-size: 1.7rem;
+            font-weight: 500;
+            color: #a13d4f;
+        }
+
+        .hidden {
+            display: none;
+        }
+
+        @keyframes pop-in {
+            0% { opacity: 0; transform: scale(0.2) rotate(-5deg); }
+            80% { transform: scale(1.05); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+
+        /* extra rose & decor (scrollable) */
+        .corner-rose {
+            position: fixed;
+            bottom: 20px;
+            right: 20px;
+            font-size: 3rem;
+            filter: drop-shadow(0 10px 8px #b91c1c);
+            opacity: 0.6;
+            z-index: 30;
+            pointer-events: none;
+        }
+
+        /* scrollable content style */
+        .footer-note {
+            margin-top: 2rem;
+            color: #994a5c;
+            font-size: 1.3rem;
+            background: rgba(255,255,240,0.6);
+            padding: 0.8rem 2rem;
+            border-radius: 60px;
+            width: fit-content;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        /* yes whatsapp link */
+        .whatsapp-redirect {
+            text-decoration: none;
+        }
+
+        /* smaller screens */
+        @media (max-width: 550px) {
+            .btn {
+                font-size: 1.5rem;
+                padding: 1rem 1.5rem;
+            }
+            .btn-yes {
+                margin-right: 15px;
+            }
+            .button-playground {
+                min-height: 120px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- floating hearts background (constant) -->
+    <div class="hearts-bg" id="heartBg"></div>
+
+    <!-- fixed romantic rose -->
+    <div class="corner-rose">🌹🥀🌹</div>
+
+    <!-- main scrollable card -->
+    <div class="valentine-card">
+        <h1>💖 will you be my Valentine? 💖</h1>
+        <div class="verse">
+            ✨ every scroll, every click ✨<br>
+            my heart beats only for you
+        </div>
+
+        <!-- special button area with moving NO -->
+        <div class="button-playground" id="btnPlayground">
+            <!-- YES button: triggers WhatsApp + message -->
+            <a href="https://wa.me/254701432460?text=YES!%20I'll%20be%20your%20Valentine%20%E2%9D%A4%EF%B8%8F" 
+               target="_blank" 
+               class="whatsapp-redirect" 
+               id="yesLink">
+                <button class="btn btn-yes" id="yesBtn">YES</button>
+            </a>
+
+            <!-- the movable NO button -->
+            <button class="btn btn-no" id="noBtn">NO</button>
+        </div>
+
+        <!-- celebration message appears after YES click -->
+        <div id="loveMessage" class="love-message hidden">
+            <h2>🥰 YAY! 💞</h2>
+            <p>you said YES!<br>WhatsApp forwarded ❤️<br>🌹 i'm the luckiest</p>
+        </div>
+
+        <div class="footer-note">
+            ⭐ scroll up/down — the NO button runs away ⭐
+        </div>
+    </div>
+
+    <script>
+        (function() {
+            // get elements
+            const noBtn = document.getElementById('noBtn');
+            const yesBtn = document.getElementById('yesBtn');
+            const yesLink = document.getElementById('yesLink');
+            const playground = document.getElementById('btnPlayground');
+            const loveMsg = document.getElementById('loveMessage');
+            const heartContainer = document.getElementById('heartBg');
+
+            // ---------- floating heart generator (beauty) ----------
+            function createHeart() {
+                const heart = document.createElement('div');
+                heart.className = 'heart-float';
+                const hearts = ['❤️', '🧡', '💖', '💗', '💘', '💝', '🌹'];
+                heart.innerHTML = hearts[Math.floor(Math.random() * hearts.length)];
+                const size = Math.floor(Math.random() * 30 + 20) + 'px';
+                heart.style.fontSize = size;
+                heart.style.left = Math.random() * 100 + '%';
+                heart.style.animationDuration = Math.random() * 8 + 7 + 's'; // 7-15s
+                heart.style.animationDelay = Math.random() * 5 + 's';
+                heartContainer.appendChild(heart);
+
+                // remove after animation to avoid endless divs (optional)
+                setTimeout(() => {
+                    if (heart.parentNode) heart.remove();
+                }, 20000);
+            }
+            // generate several at start
+            for (let i = 0; i < 20; i++) {
+                setTimeout(() => createHeart(), i * 300);
+            }
+            // keep adding
+            setInterval(createHeart, 2500);
+
+            // ---------- movable NO button (mouseover + click both trigger escape) ----------
+            function moveNoButton() {
+                if (!playground || !noBtn) return;
+
+                const playgroundRect = playground.getBoundingClientRect();
+                const btnRect = noBtn.getBoundingClientRect();
+
+                // playground dimensions (relative to viewport, but we use relative positions)
+                const playgroundWidth = playgroundRect.width;
+                const playgroundHeight = playgroundRect.height;
+                const btnWidth = btnRect.width;
+                const btnHeight = btnRect.height;
+
+                // max coordinates so button stays inside playground (with small padding)
+                const maxLeft = playgroundWidth - btnWidth - 10;
+                const maxTop = playgroundHeight - btnHeight - 10;
+                const minPos = 10;
+
+                if (maxLeft <= minPos || maxTop <= minPos) return; // too small, just skip
+
+                // generate random position
+                let newLeft = Math.floor(Math.random() * (maxLeft - minPos + 1) + minPos);
+                let newTop = Math.floor(Math.random() * (maxTop - minPos + 1) + minPos);
+
+                // BUT ensure we don't overlap YES button area heavily (just for UX)
+                // yes button is approx left: around 10~250px depending
+                const yesBtnRect = yesBtn ? yesBtn.getBoundingClientRect() : null;
+                if (yesBtnRect) {
+                    const yesRelativeLeft = yesBtnRect.left - playgroundRect.left;
+                    const yesRelativeRight = yesRelativeLeft + yesBtnRect.width;
+                    // if new button would cover yes roughly, re-roll once
+                    if (newLeft < yesRelativeRight + 30 && newLeft + btnWidth > yesRelativeLeft - 30) {
+                        // shift horizontally or vertically
+                        if (Math.random() > 0.5) {
+                            newLeft = Math.min(maxLeft, yesRelativeRight + 40 + Math.random() * 30);
+                        } else {
+                            newTop = Math.min(maxTop, Math.random() * maxTop);
+                        }
+                    }
+                }
+
+                // apply new relative position (left, top relative to playground)
+                noBtn.style.left = newLeft + 'px';
+                noBtn.style.top = newTop + 'px';
+                // ensure transform doesn't conflict (we reset translate)
+                noBtn.style.transform = 'none';
+            }
+
+            // event: hover (mouseenter)
+            noBtn.addEventListener('mouseenter', function(e) {
+                moveNoButton();
+            });
+
+            // event: click on NO also moves it and shows a playful message (optional)
+            noBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();   // avoid any unexpected behaviour
+                moveNoButton();
+
+                // tiny fun feedback: change playground bg briefly
+                playground.style.background = 'rgba(255, 180, 190, 0.7)';
+                setTimeout(() => {
+                    playground.style.background = 'rgba(255, 228, 235, 0.3)';
+                }, 200);
+
+                // also change NO text for laugh
+                noBtn.textContent = '😳 nope?';
+                setTimeout(() => {
+                    noBtn.textContent = 'NO';
+                }, 500);
+            });
+
+            // move also on touch for mobile (just to be safe)
+            noBtn.addEventListener('touchstart', function(e) {
+                e.preventDefault();   // prevent accidental click through
+                moveNoButton();
+                noBtn.textContent = '🙈';
+                setTimeout(() => { noBtn.textContent = 'NO'; }, 400);
+            });
+
+            // ---------- YES button: WhatsApp + show message, hide playground ----------
+            yesBtn.addEventListener('click', function(e) {
+                // The link will open whatsapp, but we also show our message and stop no button.
+                // we do not prevent default because we want the href to work.
+                // But we also want to hide the buttons and show message
+
+                // hide playground (makes it fade)
+                playground.style.opacity = '0.3';
+                playground.style.pointerEvents = 'none';   // disable no button moving
+                // show love message
+                loveMsg.classList.remove('hidden');
+
+                // create confetti-ish quick animation (extra spark)
+                for (let i = 0; i < 12; i++) {
+                    const mini = document.createElement('span');
+                    mini.innerHTML = '✨';
+                    mini.style.position = 'fixed';
+                    mini.style.left = Math.random() * 100 + '%';
+                    mini.style.top = Math.random() * 100 + '%';
+                    mini.style.fontSize = (20 + Math.random() * 30) + 'px';
+                    mini.style.pointerEvents = 'none';
+                    mini.style.zIndex = 999;
+                    mini.style.transition = 'all 1.5s';
+                    mini.style.opacity = '1';
+                    document.body.appendChild(mini);
+                    setTimeout(() => {
+                        mini.style.transform = 'translateY(-200px) scale(2)';
+                        mini.style.opacity = '0';
+                    }, 20);
+                    setTimeout(() => {
+                        if (mini.parentNode) mini.remove();
+                    }, 1600);
+                }
+
+                // optional: modify background
+                document.querySelector('.valentine-card').style.background = '#fff0f5';
+            });
+
+            // ensure the yes link works AND we show message.
+            // but we already have click on button inside link – we let the href open.
+            // however we must avoid double message if link opens fast.
+            // It's fine.
+
+            // Also if someone clicks the link area (the anchor) same thing
+            yesLink.addEventListener('click', function(e) {
+                // message already shown via yesBtn click. but if user clicks the edge of link?
+                // we'll trigger same effect
+                playground.style.opacity = '0.3';
+                playground.style.pointerEvents = 'none';
+                loveMsg.classList.remove('hidden');
+            });
+
+            // start with correct initial absolute position (left: auto ,top: 50%)
+            // set initial inline style to center-right
+            noBtn.style.left = 'calc(50% + 40px)';
+            noBtn.style.top = '50%';
+            noBtn.style.transform = 'translateY(-50%)';
+
+            // ensure on window resize we adjust initial (but no need strict)
+            window.addEventListener('resize', function() {
+                // keep no button within playground if it's mispositioned
+                // just reset to reasonable if outside
+                const playgroundRect = playground.getBoundingClientRect();
+                const btnRect = noBtn.getBoundingClientRect();
+                if (btnRect.left < playgroundRect.left + 10 || btnRect.right > playgroundRect.right - 10) {
+                    noBtn.style.left = 'calc(50% + 30px)';
+                    noBtn.style.top = '50%';
+                    noBtn.style.transform = 'translateY(-50%)';
+                }
+            });
+
+            // bonus: on page load, create some decor text
+        })();
+    </script>
+
+    <!-- additional romantic scroll hint: extra roses appear as you scroll -->
+    <div style="height: 20px;"></div>
+    <!-- just to make sure page is softly scrollable, but body already scrollable -->
+</body>
+</html>
